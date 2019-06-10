@@ -34,7 +34,7 @@ python train.py --lr 0.0001 --batch-size 16 --unfreeze 5 --dataset x_ray --n-lab
 Train the ResNet model by 4000 labeled data of CIFAR-10 dataset:
 
 ```
-python train.py --gpu <gpu_id> --n-labeled 4000 --out cifar10@4000
+python train.py --lr 0.002 --batch-size 64 --dataset cifar --n-labeled 4000 --out cifar10@4000 --model resnet
 ```
 
 
