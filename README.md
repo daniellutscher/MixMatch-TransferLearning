@@ -1,10 +1,13 @@
-# MixMatch
-This is an unofficial PyTorch implementation of [MixMatch: A Holistic Approach to Semi-Supervised Learning](https://arxiv.org/abs/1905.02249). 
+# MixMatch meets Transfer Learning
+
+This script combines the Semi-Supervised-Learning method MixMatch with transfer learning to fine-tune a pre-trained [Efficient-Net](https://github.com/lukemelas/EfficientNet-PyTorch) model on a chest x-ray images dataset.
+
+The MixMatch implementation is adapted from [here](https://github.com/YU1ut/MixMatch-pytorch).
+
+The MixMatch method was proposed by the Google Research team, details here: [MixMatch: A Holistic Approach to Semi-Supervised Learning](https://arxiv.org/abs/1905.02249). 
 The official Tensorflow implementation is [here](https://github.com/google-research/mixmatch).
 
-Now only experiments on CIFAR-10 are available.
-
-This repository carefully implemented important details of the official implementation to reproduce the results.
+Currently, the script only contains the [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html) as well as a [chest x-ray images dataset](https://www.kaggle.com/nih-chest-xrays/sample).
 
 
 ## Requirements
@@ -15,34 +18,25 @@ This repository carefully implemented important details of the official implemen
 - progress
 - matplotlib
 - numpy
+- efficientnet_pytorch
 
 ## Usage
 
 ### Train
-Train the model by 250 labeled data of CIFAR-10 dataset:
+Train the EfficientNet model by 250 labeled data of the x-ray dataset:
 
 ```
-python train.py --gpu <gpu_id> --n-labeled 250 --out cifar10@250
+python train.py --lr 0.0001 --batch-size 16 --unfreeze 5 --dataset x_ray --n-labeled 250 --out cifar10@250 --model efficient
 ```
 
-Train the model by 4000 labeled data of CIFAR-10 dataset:
+
+
+Train the ResNet model by 4000 labeled data of CIFAR-10 dataset:
 
 ```
 python train.py --gpu <gpu_id> --n-labeled 4000 --out cifar10@4000
 ```
 
-### Monitoring training progress
-```
-tensorboard.sh --port 6006 --logdir cifar10@250
-```
-
-## Results (Accuracy)
-| #Labels | 250 | 500 | 1000 | 2000| 4000 |
-|:---|:---:|:---:|:---:|:---:|:---:|
-|Paper | 88.92 ± 0.87 | 90.35 ± 0.94 | 92.25 ± 0.32| 92.97 ± 0.15 |93.76 ± 0.06|
-|This code | 88.71 | 88.96 | 90.52 | 92.23 | 93.52 |
-
-(Results of this code were evaluated on 1 run. Results of 5 runs with different seeds will be updated later. )
 
 ## References
 ```
