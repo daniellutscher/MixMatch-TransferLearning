@@ -2,10 +2,7 @@
 
 This script combines the Semi-Supervised-Learning method MixMatch with transfer learning to fine-tune a pre-trained [Efficient-Net](https://github.com/lukemelas/EfficientNet-PyTorch) model on a chest x-ray images dataset.
 
-The MixMatch implementation is adapted from [here](https://github.com/YU1ut/MixMatch-pytorch).
-
-The MixMatch method was proposed by the Google Research team, details here: [MixMatch: A Holistic Approach to Semi-Supervised Learning](https://arxiv.org/abs/1905.02249). 
-The official Tensorflow implementation is [here](https://github.com/google-research/mixmatch).
+The MixMatch method was proposed by the Google Research team, details here: [MixMatch: A Holistic Approach to Semi-Supervised Learning](https://arxiv.org/abs/1905.02249). This pytorch implementation is adapted from [here](https://github.com/YU1ut/MixMatch-pytorch). The official Tensorflow implementation is [here](https://github.com/google-research/mixmatch).
 
 Currently, the script only contains the [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html) as well as a [chest x-ray images dataset](https://www.kaggle.com/nih-chest-xrays/sample).
 
