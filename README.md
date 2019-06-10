@@ -34,6 +34,11 @@ Train the ResNet model by 4000 labeled data of CIFAR-10 dataset:
 python train.py --lr 0.002 --batch-size 64 --dataset cifar --n-labeled 4000 --out cifar10@4000 --model resnet
 ```
 
+## TO-DO
+- automate and add x-ray dataset creation script
+- add requirements.txt
+- hyperparameter tuning
+
 
 ## References
 ```
