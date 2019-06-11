@@ -20,7 +20,7 @@ Currently, the script only contains the [CIFAR-10](https://www.cs.toronto.edu/~k
 ## Usage
 
 ### Train
-Train the EfficientNet model with 250 labeled data of the x-ray dataset, a batch size of 16. Freeze all layers except the last for the first 5 epochs, then unfreeze all layers for fine-tuning:
+Train the EfficientNet model with 250 labeled data of the x-ray dataset, a batch size of 16, and a learning rate of 0.0001. Freeze all layers except the last for the first 5 epochs, then unfreeze all layers for fine-tuning:
 
 ```
 python train.py --lr 0.0001 --batch-size 16 --unfreeze 5 --dataset x_ray --n-labeled 250 --out x_ray@250 --model efficient
