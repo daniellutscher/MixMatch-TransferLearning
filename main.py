@@ -58,25 +58,28 @@ def main(args):
                                                        args = args)
 
         # get training accuracy
-        _, train_acc = validate(labeled_trainloader = labeled_trainloader,
-                                ema_model = ema_model,
+        _, train_acc = validate(labeled_trainloader,
+                                model = ema_model,
                                 criterion = criterion,
                                 epoch = epoch,
-                                mode='Train Stats')
+                                mode='Train Stats',
+                                device = args.device)
 
         # get validation loss and accuracy
-        val_loss, val_acc = validate(val_loader = val_loader,
-                                     ema_model = ema_model,
+        val_loss, val_acc = validate(val_loader,
+                                     model = ema_model,
                                      criterion = criterion,
                                      epoch = epoch,
-                                     mode='Valid Stats')
+                                     mode='Valid Stats',
+                                     device = args.device)
 
         # get test loss and accuracy
-        test_loss, test_acc = validate(test_loader = test_loader,
-                                       ema_model = ema_model,
+        test_loss, test_acc = validate(test_loader,
+                                       model = ema_model,
                                        criterion = criterion,
                                        epoch = epoch,
-                                       mode='Test Stats ')
+                                       mode='Test Stats ',
+                                       device = args.device)
         step = args.batch_size * args.val_iteration * (epoch + 1)
 
         # loggin stats

@@ -192,7 +192,8 @@ def validate(valloader, model, criterion, epoch, mode, device = 'cuda'):
                                             eta=bar.eta_td,
                                             loss=losses.avg)
             progress_topk = '| top1: {top1: .4f} | top5: {top5: .4f}'.format(
-                                            top1 = top1.avg)
+                                            top1 = top1.avg,
+                                            top5 = top5.avg)
             # plot progress
             bar.suffix  = '{batch}{total}{train_loss}{topk}'.format(
                                             batch = progress_batch,
