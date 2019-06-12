@@ -8,11 +8,13 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.init as init
+import torch.optim as optim
+import torch.nn.functional as F
 
 os.path.join(os.path.dirname(os.path.join(os.path.dirname(__file__))), 'models')
 from models.resnet import WideResNet
 from models.efficientnet import EfficientNet
-
+from .logger import Logger
 
 class AverageMeter(object):
     """Computes and stores the average and current value
@@ -51,7 +53,8 @@ class SemiLoss(object):
 
 class WeightEMA(object):
     def __init__(self, model, ema_model, lr = 0.002, alpha=0.999, \
-                model_version = 'efficient', num_classes=7, device = 'cuda'):
+                model_version = 'efficient', efficient_version = 'b0',
+                num_classes=7, device = 'cuda'):
         self.model = model
         self.ema_model = ema_model
         self.alpha = alpha
@@ -59,9 +62,11 @@ class WeightEMA(object):
         self.device = device
 
         if model_version == 'resnet':
-            self.tmp_model = models.WideResNet(num_classes = num_classes)
+            self.tmp_model = WideResNet(num_classes = num_classes)
         else:
-            self.tmp_model = efficient.efficientN(num_classes = num_classes)
+            self.tmp_model = EfficientNet(
+                                    version = efficient_version,
+                                    num_classes = num_classes)
         self.wd = 0.02 * self.lr
 
         for param, ema_param in zip(self.model.parameters(), \
@@ -108,10 +113,12 @@ def get_models(args):
     else:
 
         print("==> Creating model.")
-        model = create_model(model = args.model,
-                             version = args.efficient_version)
-        ema_model = create_model(model = args.model,
-                                 version = args.efficient_version,
+        model = create_model(args,
+                             model = args.model,
+                             efficient_version = args.efficient_version)
+        ema_model = create_model(args,
+                                 model = args.model,
+                                 efficient_version = args.efficient_version,
                                  ema=True)
 
         optimizer = optim.Adam(model.parameters(), lr=args.lr)
@@ -160,14 +167,14 @@ def load_checkpoint(args):
     return model, ema_model, optimizer, logger, start_epoch, best_acc
 
 
-def create_model(model, efficient_version = 'b0', ema = False):
+def create_model(args, model, efficient_version = 'b0', ema = False):
 
     if model == 'resnet':
         model = WideResNet(num_classes = args.num_classes)
     elif model == 'efficient':
-        model = efficientN(version = efficient_version,
-                                     num_classes = args.num_classes)
-    model = model.to(device)
+        model = EfficientNet(version = efficient_version,
+                             num_classes = args.num_classes)
+    model = model.to(args.device)
 
     if ema:
         for param in model.parameters():

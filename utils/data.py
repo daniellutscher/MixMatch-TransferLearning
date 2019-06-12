@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torchvision
 from torch.utils.data import DataLoader, Dataset
-from torchvision.transforms import Compose, ToTensor
+import torchvision.transforms as transforms
 from PIL import Image
 
 __all__ = ['get_data_loaders']
@@ -52,13 +52,15 @@ class X_Ray_Images(Dataset):
 
 class Labeled_Dataset(Dataset):
 
-    def __init__(self, indexs, transform, args,
+    def __init__(self, args,
+                 transform = None,
+                 indexs = None,
                  target_transform = None,
                  train = True, **kwargs):
-        super(labeled_dataset, self).__init__()
+        super(Labeled_Dataset, self).__init__()
 
-        # save all keyword arguments from kwargs as attributes
-        self.__dict__.update(kwargs)
+        self.transform = transform
+        self.target_transform = target_transform
 
         if args.dataset == 'cifar':
             ds = torchvision.datasets.CIFAR10(root = args.data_dir,
@@ -81,7 +83,7 @@ class Labeled_Dataset(Dataset):
             self.mean = (0.4881445, 0.4881445, 0.4881445)
             self.std  = (0.24949823, 0.24949823, 0.24949823)
 
-        if indexs not None:
+        if indexs is not None:
             self.X = self.X[indexs]
             self.y = self.y[indexs]
 
@@ -90,24 +92,31 @@ class Labeled_Dataset(Dataset):
     def __getitem__(self, index):
 
         img, target = self.X[index], self.y[index]
-        img = self.transform(img)
+        if self.transform is not None:
+            img = self.transform(img)
 
-        try:
-            target = self.target_transform(target)
-        except TypeError:
-            pass
+        if self.target_transform is not None:
+            try:
+                target = self.target_transform(target)
+            except TypeError:
+                pass
 
         return img, target
+
+    def __len__(self):
+        return self.X.shape[0]
 
 
 class Unlabeled_Dataset(Labeled_Dataset):
 
-    def __init__(self, transform, target_transform,
-                 args, train = True, **kwargs):
-        super(Unlabeled_Dataset, self).__init__(,
+    def __init__(self, args, indexs, transform,
+                 target_transform=None,
+                 train = True, **kwargs):
+        super(Unlabeled_Dataset, self).__init__(args,
+                                indexs = indexs,
                                 transform=transform,
                                 target_transform=target_transform,
-                                train = True, args, **kwargs))
+                                train = train, **kwargs)
         self.y = np.array([-1 for i in range(len(self.y))])
 
 
@@ -186,41 +195,40 @@ def get_data_loaders(args):
     if args.dataset == 'cifar':
         crop_size = 32
         args.num_classes = 10
-    elif args.dataset = 'x_ray':
+    elif args.dataset == 'x_ray':
         crop_size = 224
         args.num_classes = 7
 
     # transformations
     transform_train = transforms.Compose([
-                        dataset.RandomPadandCrop(crop_size),
-                        dataset.RandomFlip(),
-                        dataset.ToTensor()])
+                        RandomPadandCrop(crop_size),
+                        RandomFlip(),
+                        ToTensor()])
 
     transform_val = transforms.Compose([
-                        dataset.ToTensor()])
+                        ToTensor()])
 
     train_labeled_set, train_unlabeled_set, \
-    val_set, test_set = dataset.get_datasets(base_dir = args.data_dir,
-                                            n_labeled = args.n_labeled,
-                                            transform_train = transform_train,
-                                            transform_val = transform_val,
-                                            args = args)
+    val_set, test_set = get_datasets(n_labeled = args.n_labeled,
+                                     transform_train = transform_train,
+                                     transform_val = transform_val,
+                                     args = args)
 
-    labeled_trainloader = data.DataLoader(train_labeled_set,
+    labeled_trainloader = DataLoader(train_labeled_set,
                                           batch_size = args.batch_size,
                                           shuffle = True,
                                           num_workers = 0,
                                           drop_last = True)
-    unlabeled_trainloader = data.DataLoader(train_unlabeled_set,
+    unlabeled_trainloader = DataLoader(train_unlabeled_set,
                                           batch_size = args.batch_size,
                                           shuffle = True,
                                           num_workers = 0,
                                           drop_last = True)
-    val_loader = data.DataLoader(val_set,
+    val_loader = DataLoader(val_set,
                                  batch_size=args.batch_size,
                                  shuffle=False,
                                  num_workers=0)
-    test_loader = data.DataLoader(test_set,
+    test_loader = DataLoader(test_set,
                                   batch_size=args.batch_size,
                                   shuffle=False,
                                   num_workers=0)
@@ -244,33 +252,37 @@ def get_datasets(n_labeled, transform_train, transform_val, args):
     # split dataset into labeled, unlabeled and validation sets
     train_labeled_idxs, \
     train_unlabeled_idxs, \
-    val_idxs = train_val_split(labels = base_dataset.targets,
-                               n_labeled_per_class = int(n_labeled/args.number_classes),
-                               number_classes = args.number_classes,
+    val_idxs = train_val_split(labels = base_dataset.y,
+                               n_labeled_per_class = int(n_labeled/args.num_classes),
+                               number_classes = args.num_classes,
                                val_size = val_size)
 
-    train_labeled_dataset = Labeled_Dataset(indexs = train_labeled_idxs,
+    train_labeled_dataset = Labeled_Dataset(args = args,
+                                            indexs = train_labeled_idxs,
                                             train = True,
                                             balanced = True,
                                             transform = transform_train)
     train_unlabeled_dataset = Unlabeled_Dataset(
+                                            args = args,
                                             indexs = train_unlabeled_idxs,
                                             train = True,
                                             balanced = True,
                                             transform = TransformTwice(transform_train))
 
-    val_dataset = Labeled_Dataset(indexs = val_idxs,
+    val_dataset = Labeled_Dataset(args = args,
+                                  indexs = val_idxs,
                                   train = True,
                                   transform = transform_val,
                                   download = True)
 
-    test_dataset = Labeled_Dataset(train = False,
+    test_dataset = Labeled_Dataset(args = args,
+                                   train = False,
                                    transform = transform_val,
                                    download=True)
 
     print(f"#Labeled: {len(train_labeled_idxs)} ", end='')
     print("#Unlabeled: {len(train_unlabeled_idxs)} ", end='')
-    print("#Val: {len(val_idxs)}"))
+    print("#Val: {len(val_idxs)}")
     return train_labeled_dataset, train_unlabeled_dataset, val_dataset, test_dataset
 
 
@@ -296,7 +308,7 @@ def train_val_split(labels, n_labeled_per_class, number_classes, val_size=500):
     return train_labeled_idxs, train_unlabeled_idxs, val_idxs
 
 
-def normalise(x, mean=cifar10_mean, std=cifar10_std):
+def normalise(x, mean, std):
     x, mean, std = [np.array(a, np.float32) for a in (x, mean, std)]
     x -= mean*255
     x *= 1.0/(255*std)
