@@ -2,7 +2,7 @@ import math
 import torch
 from torch import nn
 from torch.nn import functional as F
-
+from efficientnet_pytorch import EfficientNet as effNet
 
 class Conv2dSamePadding(nn.Conv2d):
     """ 2D Convolutions like TensorFlow """
@@ -29,12 +29,10 @@ def relu_fn(x):
 
 class EfficientNet(nn.Module):
     def __init__(self, num_classes, version = 'b0'):
-        super(efficientN, self).__init__()
-        from efficientnet_pytorch import EfficientNet
+        super(EfficientNet, self).__init__()
 
         # load pretrained EfficientNet B3
-        self.model_ft = EfficientNet.from_pretrained(f'efficientnet-{version}')
-        # self.model_ft = EfficientNet.from_name(f'efficientnet-{version}')
+        self.model_ft = effNet.from_pretrained(f'efficientnet-{version}')
 
         for child in self.model_ft.children():
 

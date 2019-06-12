@@ -46,37 +46,40 @@ def main(args):
               for param in child.parameters():
                 param.requires_grad = True
 
-        print(f'\nEpoch: [{epochs+1} | {args.epochs}] LR: {args.lr}')
+        print(f'\nEpoch: [{epoch+1} | {args.epochs}] LR: {args.lr}')
 
         train_loss, train_loss_x, train_loss_u = train(labeled_trainloader = labeled_trainloader,
                                                        unlabeled_trainloader = unlabeled_trainloader,
                                                        model = model,
                                                        optimizer = optimizer,
                                                        ema_optimizer = ema_optimizer,
-                                                       train_criterion = train_criterion,
+                                                       criterion = train_criterion,
                                                        epoch = epoch,
-                                                       num_classes = num_classes)
+                                                       args = args)
 
         # get training accuracy
-        _, train_acc = validate(labeled_trainloader = labeled_trainloader,
-                                ema_model = ema_model,
+        _, train_acc = validate(labeled_trainloader,
+                                model = ema_model,
                                 criterion = criterion,
                                 epoch = epoch,
-                                mode='Train Stats')
+                                mode='Train Stats',
+                                device = args.device)
 
         # get validation loss and accuracy
-        val_loss, val_acc = validate(val_loader = val_loader,
-                                     ema_model = ema_model,
+        val_loss, val_acc = validate(val_loader,
+                                     model = ema_model,
                                      criterion = criterion,
                                      epoch = epoch,
-                                     mode='Valid Stats')
+                                     mode='Valid Stats',
+                                     device = args.device)
 
         # get test loss and accuracy
-        test_loss, test_acc = validate(test_loader = test_loader,
-                                       ema_model = ema_model,
+        test_loss, test_acc = validate(test_loader,
+                                       model = ema_model,
                                        criterion = criterion,
                                        epoch = epoch,
-                                       mode='Test Stats ')
+                                       mode='Test Stats ',
+                                       device = args.device)
         step = args.batch_size * args.val_iteration * (epoch + 1)
 
         # loggin stats
@@ -147,6 +150,7 @@ if __name__ == '__main__':
     parser.add_argument('--ema-decay', default=0.999, type=float)
     parser.add_argument('--model', default='resnet', type=str, help='model that will be used. \
                                 Default is resnet (alternative is pretrained EfficentNet)')
+    parser.add_argument('--efficient_version', default='b0', help='efficient-net version. Default is b0.')
     parser.add_argument('--machine', default='server', type=str, help='on server or laptop. default server.')
     parser.add_argument('--dataset', default='cifar', type=str, help='choose dataset, cifar10 or x-ray. Default is cifar.')
     parser.add_argument('--unfreeze', default=2, type=int, help='number of epochs before unfreezing network. Default is 2.')
@@ -162,7 +166,7 @@ if __name__ == '__main__':
     cudnn.benchmark = True
 
     # set all random seeds to same value
-    set_random_seeds(args.seed))
+    set_random_seeds(args.seed)
 
     # create output folder
     make_dir(args.out)

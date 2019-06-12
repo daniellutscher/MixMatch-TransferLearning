@@ -7,7 +7,8 @@ from utils import *
 from progress.bar import Bar as Bar
 
 
-def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, ema_optimizer, criterion, args):
+def train(labeled_trainloader, unlabeled_trainloader, model,
+          optimizer, ema_optimizer, criterion, epoch, args):
 
     # initialize all stats
     bar = Bar('Training', max=args.val_iteration)
@@ -80,20 +81,20 @@ def train(labeled_trainloader, unlabeled_trainloader, model, optimizer, ema_opti
 
         # interleave labeled and unlabed samples
         # between batches to get correct batchnorm calculation
-        mixed_input = list(torch.split(mixed_input, batch_size))
-        mixed_input = interleave(mixed_input, batch_size)
+        mixed_input = list(torch.split(mixed_input, args.batch_size))
+        mixed_input = interleave(mixed_input, args.batch_size)
 
         logits = [model(mixed_input[0])]
         for input in mixed_input[1:]:
             logits.append(model(input))
 
         # put interleaved samples back
-        logits = interleave(logits, batch_size)
+        logits = interleave(logits, args.batch_size)
         logits_x = logits[0]
         logits_u = torch.cat(logits[1:], dim=0)
 
-        Lx, Lu, w = criterion(logits_x, mixed_target[:batch_size], \
-                              logits_u, mixed_target[batch_size:], \
+        Lx, Lu, w = criterion(logits_x, mixed_target[:args.batch_size], \
+                              logits_u, mixed_target[args.batch_size:], \
                               epoch+batch_idx/args.val_iteration)
 
         loss = Lx + w * Lu
@@ -192,6 +193,7 @@ def validate(valloader, model, criterion, epoch, mode, device = 'cuda'):
                                             loss=losses.avg)
             progress_topk = '| top1: {top1: .4f} | top5: {top5: .4f}'.format(
                                             top1 = top1.avg,
+                                            top5 = top5.avg)
             # plot progress
             bar.suffix  = '{batch}{total}{train_loss}{topk}'.format(
                                             batch = progress_batch,
@@ -199,7 +201,7 @@ def validate(valloader, model, criterion, epoch, mode, device = 'cuda'):
                                             train_loss = progress_train_loss,
                                             topk = prograss_topk)
 
-
             bar.next()
         bar.finish()
+
     return (losses.avg, top1.avg)
