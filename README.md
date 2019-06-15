@@ -10,7 +10,7 @@ Currently, the script only contains the [CIFAR-10](https://www.cs.toronto.edu/~k
 ## Requirements
 - Python 3.6+
 - PyTorch 1.0
-- **torchvision 0.2.2 (older versions are not compatible with this code)** 
+- torchvision
 - tensorboardX
 - progress
 - matplotlib
