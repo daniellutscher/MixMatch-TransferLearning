@@ -1,4 +1,4 @@
-# MixMatch meets Transfer Learning
+# Combining MixMatch with Transfer Learning
 
 This script combines the Semi-Supervised-Learning method MixMatch with transfer learning to fine-tune a pre-trained [Efficient-Net](https://github.com/lukemelas/EfficientNet-PyTorch) model on a chest x-ray images dataset.
 
@@ -23,7 +23,7 @@ Currently, the script only contains the [CIFAR-10](https://www.cs.toronto.edu/~k
 Train the EfficientNet model with 250 labeled data of the x-ray dataset, a batch size of 16, and a learning rate of 0.0001. Freeze all layers except the last for the first 5 epochs, then unfreeze all layers for fine-tuning:
 
 ```
-python train.py --lr 0.0001 --batch-size 16 --unfreeze 5 --dataset x_ray --n-labeled 250 --out x_ray@250 --model efficient
+main.py --lr 0.0001 --out x_ray@250 --batch_size 16 --unfreeze 5 --dataset x_ray --n-labeled 250 --model efficient
 ```
 
 
@@ -31,7 +31,7 @@ python train.py --lr 0.0001 --batch-size 16 --unfreeze 5 --dataset x_ray --n-lab
 Train the ResNet model by 4000 labeled data of CIFAR-10 dataset:
 
 ```
-python train.py --lr 0.002 --batch-size 64 --dataset cifar --n-labeled 4000 --out cifar10@4000 --model resnet
+python main.py --lr 0.002 --batch-size 64 --dataset cifar --n-labeled 4000 --out cifar10@4000 --model resnet
 ```
 
 ## TO-DO
