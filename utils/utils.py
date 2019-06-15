@@ -104,34 +104,26 @@ class WeightEMA(object):
 
 def get_models(args):
 
-    if args.resume:
-
-        print('==> Resuming from checkpoint.')
-        model, ema_model, optimizer, \
-        logger, start_epoch, best_acc = load_checkpoint(args)
-
-    else:
-
-        print("==> Creating model.")
-        model = create_model(args,
+    print("==> Creating model.")
+    model = create_model(args,
+                         model = args.model,
+                         efficient_version = args.efficient_version)
+    ema_model = create_model(args,
                              model = args.model,
-                             efficient_version = args.efficient_version)
-        ema_model = create_model(args,
-                                 model = args.model,
-                                 efficient_version = args.efficient_version,
-                                 ema=True)
+                             efficient_version = args.efficient_version,
+                             ema=True)
 
-        optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
-        logger = Logger(os.path.join(args.out, 'log.txt'))
-        logger.set_names(['Train Loss', 'Train Loss X', \
-                          'Train Loss U',  'Valid Loss', \
-                          'Valid Acc.', 'Test Loss', 'Test Acc.'])
+    logger = Logger(os.path.join(args.out, 'log.txt'))
+    logger.set_names(['Train Loss', 'Train Loss X', \
+                      'Train Loss U',  'Valid Loss', \
+                      'Valid Acc.', 'Test Loss', 'Test Acc.'])
 
-        start_epoch, best_acc = 0, 0
+    start_epoch, best_acc = 0, 0
 
     print('Total params: %.2fM' % \
-        (sum(p.numel() for p in model.parameters())/1000000.0))
+    (sum(p.numel() for p in model.parameters())/1000000.0))
 
     # initialize exponential mean average optimizer
     ema_optimizer= WeightEMA(model = model,
@@ -142,15 +134,24 @@ def get_models(args):
                              num_classes = args.num_classes,
                              device = args.device)
 
+    if args.resume:
+
+        print('==> Resuming from checkpoint.')
+        model, ema_model, optimizer, \
+        logger, start_epoch, best_acc = load_checkpoint(args, model,
+                                                        ema_model, optimizer)
+        if args.transfer_learning and start_epoch > args.unfreeze:
+            model = unfreeze_all_layers(model, ema_model)
+
     return model, ema_model, optimizer, ema_optimizer, \
            logger, start_epoch, best_acc
 
 
-def load_checkpoint(args):
+def load_checkpoint(args, model, ema_model, optimizer):
 
-    checkpoint_file = os.path.join(args.out, 'checkpoint.pth.tar')
+    checkpoint_file = os.path.join(args.resume, 'checkpoint.pth.tar')
 
-    assert os.isfile(checkpoint_file), \
+    assert os.path.isfile(checkpoint_file), \
         'no checkpoint found in output folder.'
 
     checkpoint = torch.load(checkpoint_file)
@@ -265,3 +266,20 @@ def save_checkpoint(state, is_best, checkpoint, filename='checkpoint.pth.tar'):
     torch.save(state, filepath)
     if is_best:
         shutil.copyfile(filepath, os.path.join(checkpoint, 'model_best.pth.tar'))
+
+
+def unfreeze_all_layers(model, ema_model):
+    print('Unfreezing layers of model and ema_model.')
+
+    for child in model.model_ft.children():
+
+      for param in child.parameters():
+        param.requires_grad = True
+
+    for child in ema_model.model_ft.children():
+
+          for param in child.parameters():
+            param.requires_grad = True
+
+    return model
+

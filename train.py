@@ -199,7 +199,7 @@ def validate(valloader, model, criterion, epoch, mode, device = 'cuda'):
                                             batch = progress_batch,
                                             total = progress_total,
                                             train_loss = progress_train_loss,
-                                            topk = prograss_topk)
+                                            topk = progress_topk)
 
             bar.next()
         bar.finish()
