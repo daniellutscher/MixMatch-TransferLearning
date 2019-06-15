@@ -49,4 +49,10 @@ python main.py --lr 0.002 --batch-size 64 --dataset cifar --n-labeled 4000 --out
   journal={arXiv preprint arXiv:1905.02249},
   year={2019}
 }
+@article{tan2019efficientnet,
+  title={EfficientNet: Rethinking Model Scaling for Convolutional Neural Networks},
+  author={Tan, Mingxing and Le, Quoc V},
+  journal={arXiv preprint arXiv:1905.11946},
+  year={2019}
+}
 ```
