@@ -38,10 +38,8 @@ python main.py --lr 0.002 --batch-size 64 --dataset cifar --n-labeled 4000 --out
 Given computational limitations, I've only been able to run the MixMatch script with the efficientNet-b0 model for around 50 epochs on Google Colab (using a Tesla V4). It largely improved on the classification performance when only trained using transfear learning, increasing from ±28% test set accuracy (transfer learning with all 2800 labels) to ±44.5% test accuracy using only 250 labeled images.
 
 ## TO-DO
-- compare model's performance with and without MixMatch
-- automate and add x-ray dataset creation script
+- run models for full epoch duration
 - add requirements.txt
-- hyperparameter tuning
 
 
 ## References
