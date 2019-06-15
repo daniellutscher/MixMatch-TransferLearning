@@ -44,41 +44,6 @@ def proc_images(images, labels, diagnosis_labels_mapping, HEIGHT, WIDTH):
     return np.array(x), y
 
 
-def to_categorical(y, num_classes=None, dtype='float32'):
-  """Converts a class vector (integers) to binary class matrix.
-
-  E.g. for use with categorical_crossentropy.
-
-  Arguments:
-      y: class vector to be converted into a matrix
-          (integers from 0 to num_classes).
-      num_classes: total number of classes.
-      dtype: The data type expected by the input. Default: `'float32'`.
-
-  Returns:
-      A binary matrix representation of the input. The classes axis is placed
-      last.
-  """
-  y = np.array(y, dtype='int')
-  input_shape = y.shape
-
-  if input_shape and input_shape[-1] == 1 and len(input_shape) > 1:
-    input_shape = tuple(input_shape[:-1])
-
-  y = y.ravel()
-
-  if not num_classes:
-    num_classes = np.max(y) + 1
-
-  n = y.shape[0]
-  categorical = np.zeros((n, num_classes), dtype=dtype)
-  categorical[np.arange(n), y] = 1
-  output_shape = input_shape + (num_classes,)
-  categorical = np.reshape(categorical, output_shape)
-
-  return categorical
-
-
 def save_dataset(data_dir, X, y, train=True, balanced=True):
 
     train_string = 'train' if train else 'test'
@@ -87,7 +52,7 @@ def save_dataset(data_dir, X, y, train=True, balanced=True):
     np.save(os.path.join(data_dir,
             f'xray_x_{train_string}{balanced_string}.npy'), X)
     np.save(os.path.join(data_dir,
-            f'xray_x_{train_string}{balanced_string}.npy'), y)
+            f'xray_y_{train_string}{balanced_string}.npy'), y)
 
 
 def main(args):
@@ -141,10 +106,6 @@ def main(args):
                                  [len(X_train_balanced)] + X_train_shape)
     X_test_balanced = np.reshape(X_test_balanced,
                                  [len(X_test_balanced)] + X_test_shape)
-
-    # # one hot encoding labels
-    # Y_train_balancedHot = to_categorical(Y_train_balanced, num_classes = 8)
-    # Y_test_balancedHot = to_categorical(Y_test_balanced, num_classes = 8)
 
     class_weight = cw.compute_class_weight('balanced',
                                            np.unique(Y_train_balanced),
