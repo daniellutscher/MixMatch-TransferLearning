@@ -115,7 +115,7 @@ def main(args):
     print('SAVING BALANCED DATASET.')
     _ = save_dataset(args.data_dir, X=X_train_balanced, y=Y_train_balanced,
                      train=True, balanced=True)
-    _ = save_dataset(args.data_dir, X=X_test_balanced, y=Y_test,
+    _ = save_dataset(args.data_dir, X=X_test_balanced, y=Y_test_balanced,
                      train=False, balanced=True)
 
 

@@ -33,18 +33,14 @@ def main(args):
     step = 0
     test_accs = []
 
-    # Train and val
+    # rain and val
     for epoch in range(start_epoch, args.epochs):
 
         # transfer learning approach for the efficientNet model
         # First run only the last layers while keeping pre-trained frozen
         # after args.unfreeze epochs, fine-tune the whole network
         if args.transfer_learning and epoch == args.unfreeze:
-            print('unfreezing all layers of EfficientNet model')
-            for child in model.model_ft.children():
-
-              for param in child.parameters():
-                param.requires_grad = True
+            model = unfreeze_all_layers(model, ema_model)
 
         print(f'\nEpoch: [{epoch+1} | {args.epochs}] LR: {args.lr}')
 
@@ -154,8 +150,9 @@ if __name__ == '__main__':
     parser.add_argument('--machine', default='server', type=str, help='on server or laptop. default server.')
     parser.add_argument('--dataset', default='cifar', type=str, help='choose dataset, cifar10 or x-ray. Default is cifar.')
     parser.add_argument('--unfreeze', default=2, type=int, help='number of epochs before unfreezing network. Default is 2.')
-    parser.add_argument('--trans', default=False, type=bool, dest='transfer_learning',\
+    parser.add_argument('--trans', default=True, type=bool, dest='transfer_learning',\
                         help='turns on transfer learning, default is False. If True, needs --unfreeze epoch')
+
     args = parser.parse_args()
 
     args.device = 'cuda' if torch.cuda.is_available() else 'cpu'
