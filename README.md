@@ -40,10 +40,9 @@ Train the EfficientNet model with 250 labeled data of the x-ray dataset, a batch
 python main.py --lr 0.0001 --out x_ray@250 --batch_size 16 --unfreeze 5 --dataset x_ray --n-labeled 250 --model efficient
 ```
 
-Train the ResNet model by 4000 labeled data of CIFAR-10 dataset:
-
+Train the EfficientNet model in traditional transfer-learning fashion, without MixMatch. Train it on the x-ray dataset with a batch size of 64, and a learning rate of 0.0001. Freeze all layers except the last for the first 5 epochs, then unfreeze all layers for fine-tuning:
 ```
-python main.py --lr 0.002 --batch-size 64 --dataset cifar --n-labeled 4000 --out cifar10@4000 --model resnet
+main_no_ssl.py --out x_ray@250 --batch_size 64 --lr 0.0001 --unfreeze 5  --dataset x_ray --model efficient
 ```
 
 ## Current Performance
@@ -52,7 +51,6 @@ Given computational limitations, I've only been able to run the MixMatch script 
 ## TO-DO
 - run models for full epoch duration
 - add requirements.txt
-- Include the baseline training script (only transfer learning, no MixMatch)
 
 ## References
 ```
