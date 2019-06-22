@@ -19,7 +19,7 @@ def main(args):
 
     # create labeled, validation, and test data loader
     # unlabeled data loader not needed for baseline training
-    train_loader, test_loader, args = get_data_loaders_no_ssl(args)
+    train_loader, val_loader, args = get_data_loaders_no_ssl(args)
 
     # create models
     model = create_model(args, model = 'efficient',
@@ -59,11 +59,11 @@ def main(args):
         # First run only the last layers while keeping pre-trained frozen
         # after args.unfreeze epochs, fine-tune the whole network
         if args.transfer_learning and epoch == args.unfreeze:
-            model = unfreeze_all_layers(model, ema_model)
+            model = unfreeze_layer(model)
 
         print(f'\nEpoch: [{epoch+1} | {args.epochs}] LR: {args.lr}')
 
-        train_loss = train_no_ssl(model = model,
+        train_loss, train_acc = train_no_ssl(model = model,
                                   optimizer = optimizer,
                                   criterion = criterion,
                                   train_loader = train_loader,
@@ -74,10 +74,10 @@ def main(args):
                                      model = model,
                                      criterion = criterion,
                                      epoch = epoch,
-                                     mode='Valid Stats',
+                                     mode='Validating',
                                      device = args.device)
 
-        step = args.batch_size * args.val_iteration * (epoch + 1)
+        step = args.batch_size * len(train_loader) * (epoch + 1)
 
         # loggin stats
         writer.add_scalar('losses/train_loss', train_loss, step)
@@ -99,15 +99,11 @@ def main(args):
                 'best_acc': best_acc,
                 'optimizer' : optimizer.state_dict(),
             }, is_best, checkpoint = args.out)
-        test_accs.append(test_acc)
     logger.close()
     writer.close()
 
     print('Best acc:')
     print(best_acc)
-
-    print('Mean acc:')
-    print(np.mean(test_accs[-20:]))
 
 
 if __name__ == '__main__':
@@ -129,6 +125,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0, help='specified random seed.')
     parser.add_argument('--n-labeled', default=None,
                             help='used for compatibility with SSL functions. Default is None.')
+    parser.add_argument('--out', type=str, help='output dir in dataset folder.')
 
     parser.add_argument('--model', default='efficient', type=str, help='model that will be used. \
                                 Default is resnet (alternative is pretrained EfficentNet)')

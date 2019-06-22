@@ -164,7 +164,7 @@ def validate(valloader, model, criterion, epoch, mode, device = 'cuda'):
             # measure data loading time
             data_time.update(time.time() - end)
 
-            inputs, targets = inputs.to(args.device), targets.cuda(non_blocking=True)
+            inputs, targets = inputs.to(device), targets.cuda(non_blocking=True)
 
             # compute output
             outputs = model(inputs)
@@ -211,18 +211,18 @@ def validate(valloader, model, criterion, epoch, mode, device = 'cuda'):
 def train_no_ssl(model, optimizer, criterion, train_loader, args):
 
     # initialize all stats
-    args.val_iteration = len(train_loader) * args.batch_size
-    bar = Bar('Training', max = args.val_iteration)
+    bar = Bar('Training', max = len(train_loader))
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
+    top1 = AverageMeter()
     end = time.time()
 
     model.train()
     model.to(args.device)
 
     for idx, batch in enumerate(train_loader):
-        
+
         # send data to GPU
         inputs, targets = batch[0].to(args.device), batch[1].to(args.device)
 
@@ -236,8 +236,10 @@ def train_no_ssl(model, optimizer, criterion, train_loader, args):
         loss.backward()
         optimizer.step()
 
-        # record loss
+        # measure accuracy and record loss
+        prec1, _ = accuracy(outputs, targets, topk=(1, 5))
         losses.update(loss.item(), inputs.size(0))
+        top1.update(prec1.item(), inputs.size(0))
 
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -245,7 +247,7 @@ def train_no_ssl(model, optimizer, criterion, train_loader, args):
 
         # plot progress
         progress_batch = '({batch}/{size}) '.format(batch=idx + 1,
-                                                    size=args.val_iteration)
+                                                    size=len(train_loader))
         progress_total = '| Batch: {bt:.3f}s | Total: {total:} '.format(
                                                     bt=batch_time.avg,
                                                     total=bar.elapsed_td)
@@ -259,4 +261,4 @@ def train_no_ssl(model, optimizer, criterion, train_loader, args):
         bar.next()
     bar.finish()
 
-    return losses.avg
+    return (losses.avg, top1.avg)

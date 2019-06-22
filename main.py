@@ -134,6 +134,7 @@ if __name__ == '__main__':
 
     # Miscs
     parser.add_argument('--seed', type=int, default=0, help='specified random seed.')
+    parser.add_argument('--out', type=str, help='output dir in dataset folder.')
 
     #Method options
     parser.add_argument('--n-labeled', type=int, default=250,

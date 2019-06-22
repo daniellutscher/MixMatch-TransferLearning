@@ -117,8 +117,9 @@ def get_models(args):
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     logger = Logger(os.path.join(args.out, 'log.txt'))
-    logger.set_names(['Train Loss', 'Valid Loss', \
-                      'Valid Acc.', 'Train Acc.'])
+    logger.set_names(['Train Loss', 'Train Loss X', \
+                      'Train Loss U',  'Valid Loss', \
+                      'Valid Acc.', 'Test Loss', 'Test Acc.'])
 
     start_epoch, best_acc = 0, 0
 
@@ -285,7 +286,7 @@ def save_checkpoint(state, is_best, checkpoint, filename='checkpoint.pth.tar'):
 
 
 def unfreeze_layer(model):
-
+    print('\nUnfreezing model layers.')
     for child in model.model_ft.children():
 
         for param in child.parameters():
