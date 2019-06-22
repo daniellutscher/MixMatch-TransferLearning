@@ -164,7 +164,7 @@ def validate(valloader, model, criterion, epoch, mode, device = 'cuda'):
             # measure data loading time
             data_time.update(time.time() - end)
 
-            inputs, targets = inputs.to(device), targets.cuda(non_blocking=True)
+            inputs, targets = inputs.to(args.device), targets.cuda(non_blocking=True)
 
             # compute output
             outputs = model(inputs)
@@ -222,9 +222,12 @@ def train_no_ssl(model, optimizer, criterion, train_loader, args):
     model.to(args.device)
 
     for idx, batch in enumerate(train_loader):
+        #print(next(model.parameters()).is_cuda)
+
         # send data to GPU
         inputs, targets = batch[0].to(args.device), batch[1].to(args.device)
-
+        print(inputs.is_cuda, targets.is_cuda)
+        # import ipdb; ipdb.set_trace()
         # forward
         outputs = model(inputs)
 

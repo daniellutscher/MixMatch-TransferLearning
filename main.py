@@ -140,8 +140,6 @@ if __name__ == '__main__':
                             help='Number of labeled data')
     parser.add_argument('--val-iteration', type=int, default=1024,
                             help='Number of labeled data')
-    parser.add_argument('--out', default='result',
-                            help='Directory to output the result')
     parser.add_argument('--alpha', default=0.75, type=float)
     parser.add_argument('--lambda-u', default=75, type=float)
     parser.add_argument('--T', default=0.5, type=float)
@@ -158,7 +156,8 @@ if __name__ == '__main__':
 
     args.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     args.data_dir = os.path.join(os.path.abspath(os.getcwd()), 'dataset')
-
+    args.out = os.path.join(os.path.abspath(os.getcwd()), 'results')
+    
     # enables the inbuilt cudnn auto-tuner to find best algorithm
     # to use for your hardware.
     cudnn.benchmark = True

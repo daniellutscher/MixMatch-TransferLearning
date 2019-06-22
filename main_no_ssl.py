@@ -127,8 +127,6 @@ if __name__ == '__main__':
                         help='path to latest checkpoint (default: none)')
     # Miscs
     parser.add_argument('--seed', type=int, default=0, help='specified random seed.')
-    parser.add_argument('--out', default='result',
-                            help='Directory to output the result')
     parser.add_argument('--n-labeled', default=None,
                             help='used for compatibility with SSL functions. Default is None.')
 
@@ -145,6 +143,7 @@ if __name__ == '__main__':
 
     args.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     args.data_dir = os.path.join(os.path.abspath(os.getcwd()), 'dataset')
+    args.out = os.path.join(os.path.abspath(os.getcwd()), 'results')
 
     # enables the inbuilt cudnn auto-tuner to find best algorithm
     # to use for your hardware.

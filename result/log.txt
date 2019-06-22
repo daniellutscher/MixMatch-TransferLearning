@@ -1,0 +1,1 @@
+Train Loss	Valid Loss	Valid Acc.	Train Acc.	

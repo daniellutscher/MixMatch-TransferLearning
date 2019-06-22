@@ -136,25 +136,26 @@ def get_models(args):
 
     if args.resume:
 
-        print('==> Resuming from checkpoint.')
-        model, ema_model, optimizer, \
-        logger, start_epoch, best_acc = load_checkpoint(args, model,
-                                                        ema_model, optimizer)
-        if args.transfer_learning and start_epoch > args.unfreeze:
-            print('Unfreezing layers of model and ema_model.')
-            model = unfreeze_layer(model)
-            ema_model = unfreeze_layer(ema_model)
+        checkpoint_file = os.path.join(args.out, 'checkpoint.pth.tar')
+
+        with ignored(AssertionError):
+            assert os.path.isfile(checkpoint_file), \
+                'no checkpoint found in output folder.'
+
+            print('==> Resuming from checkpoint.')
+            model, ema_model, optimizer, \
+            logger, start_epoch, best_acc = load_checkpoint(args, model,
+                                                            ema_model, optimizer)
+            if args.transfer_learning and start_epoch > args.unfreeze:
+                print('Unfreezing layers of model and ema_model.')
+                model = unfreeze_layer(model)
+                ema_model = unfreeze_layer(ema_model)
 
     return model, ema_model, optimizer, ema_optimizer, \
-           logger, start_epoch, best_acc
+            logger, start_epoch, best_acc
 
 
 def load_checkpoint(args, model, optimizer, ema_model=None):
-
-    checkpoint_file = os.path.join(args.out, 'checkpoint.pth.tar')
-
-    assert os.path.isfile(checkpoint_file), \
-        'no checkpoint found in output folder.'
 
     checkpoint = torch.load(checkpoint_file)
 
