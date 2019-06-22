@@ -46,7 +46,7 @@ Given computational limitations, I've only been able to run the MixMatch script 
 ## TO-DO
 - run models for full epoch duration
 - add requirements.txt
-
+- Include the baseline training script (only transfer learning, no MixMatch)
 
 ## References
 ```
