@@ -18,6 +18,14 @@ Currently, the script only contains the [CIFAR-10](https://www.cs.toronto.edu/~k
 - efficientnet_pytorch
 
 ## Usage
+### Preprocess X-ray dataset
+Download the X-ray dataset from the [kaggle website](https://www.kaggle.com/nih-chest-xrays/sample/downloads/sample.zip/4). 
+Next, create the dataset and x_ray_images folder:
+```
+mkdir -p dataset/x_ray_images
+```
+Then extract the zip file into /dataset/x_ray_images and run make_x_ray_dataset.py
+
 
 ### Train
 Train the EfficientNet model with 250 labeled data of the x-ray dataset, a batch size of 16, and a learning rate of 0.0001. Freeze all layers except the last for the first 5 epochs, then unfreeze all layers for fine-tuning:
