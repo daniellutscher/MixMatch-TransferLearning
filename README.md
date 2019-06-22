@@ -46,7 +46,7 @@ main_no_ssl.py --out x_ray@250 --batch_size 64 --lr 0.0001 --unfreeze 5  --datas
 ```
 
 ## Current Performance
-Given computational limitations, I've only been able to run the MixMatch script with the efficientNet-b0 model for around 50 epochs (see To-Do). Adding the SSL method largely improved on the classification performance, increasing from ±28% test set accuracy (transfer learning with all 2800 labels) to ±44.5% test accuracy using only 250 labeled images.
+Given computational limitations, I've only been able to run the MixMatch script with the efficientNet-b0 model for around 50 epochs (see To-Do). Adding the SSL method largely improved on the classification performance, increasing from ±30% test set accuracy (transfer learning with all 2800 labels) to ±44.5% test accuracy using only 250 labeled images.
 
 ## TO-DO
 - run models for full epoch duration
