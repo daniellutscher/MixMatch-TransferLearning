@@ -281,8 +281,8 @@ def get_datasets(n_labeled, transform_train, transform_val, args):
                                    download=True)
 
     print(f"#Labeled: {len(train_labeled_idxs)} ", end='')
-    print("#Unlabeled: {len(train_unlabeled_idxs)} ", end='')
-    print("#Val: {len(val_idxs)}")
+    print(f"#Unlabeled: {len(train_unlabeled_idxs)} ", end='')
+    print(f"#Val: {len(val_idxs)}")
     return train_labeled_dataset, train_unlabeled_dataset, val_dataset, test_dataset
 
 
