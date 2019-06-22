@@ -222,12 +222,10 @@ def train_no_ssl(model, optimizer, criterion, train_loader, args):
     model.to(args.device)
 
     for idx, batch in enumerate(train_loader):
-        #print(next(model.parameters()).is_cuda)
-
+        
         # send data to GPU
         inputs, targets = batch[0].to(args.device), batch[1].to(args.device)
-        print(inputs.is_cuda, targets.is_cuda)
-        # import ipdb; ipdb.set_trace()
+
         # forward
         outputs = model(inputs)
 

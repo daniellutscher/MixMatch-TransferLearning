@@ -20,9 +20,9 @@ class X_Ray_Images(Dataset):
         balanced_string = '' if balanced else '_unbalanced'
 
         self.transform = transform
-        self.X = np.load(join(base_dir, \
+        self.X = np.load(os.path.join(base_dir,
                     f'x_ray_images/xray_x_{set_type}{balanced_string}.npy'))
-        self.y = np.load(join(base_dir, \
+        self.y = np.load(os.path.join(base_dir,
                     f'x_ray_images/xray_y_{set_type}{balanced_string}.npy'))
 
         self.y = torch.from_numpy(self.y).long()
@@ -283,8 +283,8 @@ def get_datasets(transform_train, transform_val, args):
                                    download=True)
 
     print(f"#Labeled: {len(train_labeled_idxs)} ", end='')
-    print("#Unlabeled: {len(train_unlabeled_idxs)} ", end='')
-    print("#Val: {len(val_idxs)}")
+    print(f"#Unlabeled: {len(train_unlabeled_idxs)} ", end='')
+    print(f"#Val: {len(val_idxs)}")
     return train_labeled_dataset, train_unlabeled_dataset, val_dataset, test_dataset
 
 
