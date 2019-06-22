@@ -11,27 +11,46 @@ import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from tensorboardX import SummaryWriter
 from utils import *
-from train import train, validate
+from train import train, validate, train_no_ssl
+
 
 
 def main(args):
 
-    # create labeled, unlabeled, validation, and test data loader
-    labeled_trainloader, unlabeled_trainloader, \
-        val_loader, test_loader, args = get_data_loaders(args)
+    # create labeled, validation, and test data loader
+    # unlabeled data loader not needed for baseline training
+    train_loader, val_loader, args = get_data_loaders_no_ssl(args)
 
-    # create or load models
-    model, ema_model, optimizer,\
-    ema_optimizer, logger, start_epoch, best_acc  = get_models(args)
+    # create models
+    model = create_model(args, model = 'efficient',
+                         efficient_version = args.efficient_version)
 
-    # initialize loss functions
-    train_criterion = SemiLoss(args.lambda_u)
-    criterion = nn.CrossEntropyLoss()
+    # optimizer
+    optimizer = optim.Adam(model.parameters(), lr=args.lr)
+    criterion = torch.nn.CrossEntropyLoss()
+
+    # stats and logger
+    logger = Logger(os.path.join(args.out, 'log.txt'))
+    logger.set_names(['Train Loss', 'Valid Loss', \
+                      'Valid Acc.', 'Train Acc.'])
+    start_epoch, best_acc = 0, 0
+
+
+    # load from checkpoints
+    if args.resume:
+        print('==> Resuming from checkpoint.')
+        load_checkpoint(args, model, optimizer, ema_model=None)
+
+        if args.transfer_learning and start_epoch > args.unfreeze:
+            print('Unfreezing layers of model.')
+            model = unfreeze_layer(model)
+
 
     # initialize useful stats / logger variables
     writer = SummaryWriter(args.out)
     step = 0
     test_accs = []
+
 
     # train and val
     for epoch in range(start_epoch, args.epochs):
@@ -41,56 +60,34 @@ def main(args):
         # after args.unfreeze epochs, fine-tune the whole network
         if args.transfer_learning and epoch == args.unfreeze:
             model = unfreeze_layer(model)
-            ema_model = unfreeze_layer(ema_model)
 
         print(f'\nEpoch: [{epoch+1} | {args.epochs}] LR: {args.lr}')
 
-        train_loss, train_loss_x, train_loss_u = train(labeled_trainloader = labeled_trainloader,
-                                                       unlabeled_trainloader = unlabeled_trainloader,
-                                                       model = model,
-                                                       optimizer = optimizer,
-                                                       ema_optimizer = ema_optimizer,
-                                                       criterion = train_criterion,
-                                                       epoch = epoch,
-                                                       args = args)
-
-        # get training accuracy
-        _, train_acc = validate(labeled_trainloader,
-                                model = ema_model,
-                                criterion = criterion,
-                                epoch = epoch,
-                                mode='Train Stats',
-                                device = args.device)
+        train_loss, train_acc = train_no_ssl(model = model,
+                                  optimizer = optimizer,
+                                  criterion = criterion,
+                                  train_loader = train_loader,
+                                  args = args)
 
         # get validation loss and accuracy
         val_loss, val_acc = validate(val_loader,
-                                     model = ema_model,
+                                     model = model,
                                      criterion = criterion,
                                      epoch = epoch,
-                                     mode='Valid Stats',
+                                     mode='Validating',
                                      device = args.device)
 
-        # get test loss and accuracy
-        test_loss, test_acc = validate(test_loader,
-                                       model = ema_model,
-                                       criterion = criterion,
-                                       epoch = epoch,
-                                       mode='Test Stats ',
-                                       device = args.device)
-        step = args.batch_size * args.val_iteration * (epoch + 1)
+        step = args.batch_size * len(train_loader) * (epoch + 1)
 
         # loggin stats
         writer.add_scalar('losses/train_loss', train_loss, step)
         writer.add_scalar('losses/valid_loss', val_loss, step)
-        writer.add_scalar('losses/test_loss', test_loss, step)
 
         writer.add_scalar('accuracy/train_acc', train_acc, step)
         writer.add_scalar('accuracy/val_acc', val_acc, step)
-        writer.add_scalar('accuracy/test_acc', test_acc, step)
 
         # append logger file
-        logger.append([train_loss, train_loss_x, train_loss_u, \
-                       val_loss, val_acc, test_loss, test_acc])
+        logger.append([train_loss, val_loss, val_acc, train_acc])
 
         # save model
         is_best = val_acc > best_acc
@@ -98,22 +95,15 @@ def main(args):
         save_checkpoint({
                 'epoch': epoch + 1,
                 'state_dict': model.state_dict(),
-                'ema_state_dict': ema_model.state_dict(),
                 'acc': val_acc,
                 'best_acc': best_acc,
                 'optimizer' : optimizer.state_dict(),
             }, is_best, checkpoint = args.out)
-        test_accs.append(test_acc)
     logger.close()
     writer.close()
 
     print('Best acc:')
     print(best_acc)
-
-    print('Mean acc:')
-    print(np.mean(test_accs[-20:]))
-
-
 
 
 if __name__ == '__main__':
@@ -126,32 +116,25 @@ if __name__ == '__main__':
                         help='manual epoch number (useful on restarts)')
     parser.add_argument('--batch_size', default=64, type=int, metavar='N',
                         help='train batchsize')
-    parser.add_argument('--lr', '--learning-rate', default=0.002, type=float,
+    parser.add_argument('--lr', '--learning-rate', default=0.0001, type=float,
                         metavar='LR', help='initial learning rate')
     # Checkpoints
-    parser.add_argument('--resume', default=True, type=bool, metavar='PATH',
-                        help='Continue from latest checkpoint. Default is True.')
-
+    parser.add_argument('--resume', default='', type=str, metavar='PATH',
+                        help='path to latest checkpoint (default: none)')
     # Miscs
     parser.add_argument('--seed', type=int, default=0, help='specified random seed.')
+    parser.add_argument('--n-labeled', default=None,
+                            help='used for compatibility with SSL functions. Default is None.')
     parser.add_argument('--out', type=str, help='output dir in dataset folder.')
 
-    #Method options
-    parser.add_argument('--n-labeled', type=int, default=250,
-                            help='Number of labeled data')
-    parser.add_argument('--val-iteration', type=int, default=1024,
-                            help='Number of labeled data')
-    parser.add_argument('--alpha', default=0.75, type=float)
-    parser.add_argument('--lambda-u', default=75, type=float)
-    parser.add_argument('--T', default=0.5, type=float)
-    parser.add_argument('--ema-decay', default=0.999, type=float)
-    parser.add_argument('--model', default='resnet', type=str, help='model that will be used. \
+    parser.add_argument('--model', default='efficient', type=str, help='model that will be used. \
                                 Default is resnet (alternative is pretrained EfficentNet)')
     parser.add_argument('--efficient_version', default='b0', help='efficient-net version. Default is b0.')
-    parser.add_argument('--dataset', default='cifar', type=str, help='choose dataset, cifar10 or x-ray. Default is cifar.')
+    parser.add_argument('--dataset', default='x_ray', type=str, help='choose dataset, cifar10 or x-ray. Default is cifar.')
     parser.add_argument('--unfreeze', default=2, type=int, help='number of epochs before unfreezing network. Default is 2.')
     parser.add_argument('--trans', default=True, type=bool, dest='transfer_learning',\
                         help='turns on transfer learning, default is False. If True, needs --unfreeze epoch')
+    parser.add_argument('--balanced', default=True, type=bool, help='load balanced or original (unbalanced) dataset. Default is balanced.')
 
     args = parser.parse_args()
 

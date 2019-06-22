@@ -3,11 +3,13 @@ import types
 import numpy as np
 import torch
 import torchvision
+from os.path import join
 from torch.utils.data import DataLoader, Dataset
 import torchvision.transforms as transforms
 from PIL import Image
+from utils.utils import ignored
 
-__all__ = ['get_data_loaders']
+__all__ = ['get_data_loaders', 'get_data_loaders_no_ssl']
 
 class X_Ray_Images(Dataset):
 
@@ -98,10 +100,8 @@ class Labeled_Dataset(Dataset):
             img = self.transform(img)
 
         if self.target_transform is not None:
-            try:
+            with ignored(TypeError):
                 target = self.target_transform(target)
-            except TypeError:
-                pass
 
         return img, target
 
@@ -149,8 +149,8 @@ class RandomPadandCrop(object):
             self.output_size = output_size
 
     def __call__(self, x):
-        x = pad(x, 4)
 
+        x = pad(x, 4)
         h, w = x.shape[1:]
         new_h, new_w = self.output_size
 
@@ -211,8 +211,7 @@ def get_data_loaders(args):
                         ToTensor()])
 
     train_labeled_set, train_unlabeled_set, \
-    val_set, test_set = get_datasets(n_labeled = args.n_labeled,
-                                     transform_train = transform_train,
+    val_set, test_set = get_datasets(transform_train = transform_train,
                                      transform_val = transform_val,
                                      args = args)
 
@@ -237,7 +236,7 @@ def get_data_loaders(args):
     return labeled_trainloader, unlabeled_trainloader, val_loader, test_loader, args
 
 
-def get_datasets(n_labeled, transform_train, transform_val, args):
+def get_datasets(transform_train, transform_val, args):
 
     if args.dataset == 'cifar':
         base_dataset = torchvision.datasets.CIFAR10(root=args.data_dir,
@@ -251,11 +250,12 @@ def get_datasets(n_labeled, transform_train, transform_val, args):
                                     transform=transform_train)
         val_size = 50 # per class -> ± 12% of whole dataset
 
+
     # split dataset into labeled, unlabeled and validation sets
     train_labeled_idxs, \
     train_unlabeled_idxs, \
     val_idxs = train_val_split(labels = base_dataset.y,
-                               n_labeled_per_class = int(n_labeled/args.num_classes),
+                               n_labeled_per_class = int(args.n_labeled/args.num_classes),
                                number_classes = args.num_classes,
                                val_size = val_size)
 
@@ -286,6 +286,68 @@ def get_datasets(n_labeled, transform_train, transform_val, args):
     print(f"#Unlabeled: {len(train_unlabeled_idxs)} ", end='')
     print(f"#Val: {len(val_idxs)}")
     return train_labeled_dataset, train_unlabeled_dataset, val_dataset, test_dataset
+
+
+def get_data_loaders_no_ssl(args):
+
+    # get datasets
+    print(f'==> Preparing {args.dataset}')
+
+    if args.dataset == 'cifar':
+        crop_size = 32
+        args.num_classes = 10
+    elif args.dataset == 'x_ray':
+        crop_size = 224
+        args.num_classes = 7
+
+    # transformations
+    transform_train = transforms.Compose([
+                        RandomPadandCrop(crop_size),
+                        RandomFlip(),
+                        ToTensor()])
+
+    transform_val = transforms.Compose([
+                        transforms.ToTensor()])
+
+    train_set, test_set = get_datasets_no_ssl(
+                                     transform_train = transform_train,
+                                     transform_val = transform_val,
+                                     args = args)
+
+    labeled_trainloader = DataLoader(train_set,
+                                      batch_size = args.batch_size,
+                                      shuffle = True,
+                                      num_workers = 0,
+                                      drop_last = True)
+    test_loader = DataLoader(test_set,
+                              batch_size=args.batch_size,
+                              shuffle=False,
+                              num_workers=0)
+
+    return labeled_trainloader, test_loader, args
+
+
+def get_datasets_no_ssl(transform_train, transform_val, args):
+
+    if args.dataset == 'cifar':
+        train_set = torchvision.datasets.CIFAR10(root=args.data_dir,
+                                                    train=True,
+                                                    download=True)
+        test_set = torchvision.datasets.CIFAR10(root=args.data_dir,
+                                                    train=False,
+                                                    download=True)
+    elif args.dataset == 'x_ray':
+        train_set = Labeled_Dataset(base_dir = args.data_dir,
+                                    train = True,
+                                    balanced = True,
+                                    transform=transform_train,
+                                    args = args)
+        test_set = Labeled_Dataset(base_dir = args.data_dir,
+                                    train = False,
+                                    balanced = True,
+                                    transform=transform_train,
+                                    args = args)
+    return train_set, test_set
 
 
 def train_val_split(labels, n_labeled_per_class, number_classes, val_size=500):

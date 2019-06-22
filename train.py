@@ -205,3 +205,60 @@ def validate(valloader, model, criterion, epoch, mode, device = 'cuda'):
         bar.finish()
 
     return (losses.avg, top1.avg)
+
+
+
+def train_no_ssl(model, optimizer, criterion, train_loader, args):
+
+    # initialize all stats
+    bar = Bar('Training', max = len(train_loader))
+    batch_time = AverageMeter()
+    data_time = AverageMeter()
+    losses = AverageMeter()
+    top1 = AverageMeter()
+    end = time.time()
+
+    model.train()
+    model.to(args.device)
+
+    for idx, batch in enumerate(train_loader):
+
+        # send data to GPU
+        inputs, targets = batch[0].to(args.device), batch[1].to(args.device)
+
+        # forward
+        outputs = model(inputs)
+
+        # backward
+        loss = criterion(outputs, targets)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        # measure accuracy and record loss
+        prec1, _ = accuracy(outputs, targets, topk=(1, 5))
+        losses.update(loss.item(), inputs.size(0))
+        top1.update(prec1.item(), inputs.size(0))
+
+        # measure elapsed time
+        batch_time.update(time.time() - end)
+        end = time.time()
+
+        # plot progress
+        progress_batch = '({batch}/{size}) '.format(batch=idx + 1,
+                                                    size=len(train_loader))
+        progress_total = '| Batch: {bt:.3f}s | Total: {total:} '.format(
+                                                    bt=batch_time.avg,
+                                                    total=bar.elapsed_td)
+        progress_train_loss = '| ETA: {eta:} | Loss: {loss:.4f} '.format(
+                                                    eta=bar.eta_td,
+                                                    loss=losses.avg)
+        bar.suffix  = '{batch}{total}{train_loss}'.format(
+                                            batch = progress_batch,
+                                            total = progress_total,
+                                            train_loss = progress_train_loss)
+        bar.next()
+    bar.finish()
+
+    return (losses.avg, top1.avg)
