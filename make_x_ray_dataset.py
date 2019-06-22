@@ -57,7 +57,7 @@ def save_dataset(data_dir, X, y, train=True, balanced=True):
 
 def main(args):
     images = glob(os.path.join(args.image_dir, '*.png'))
-    labels = pd.read_csv(os.path.join(args.image_dir, 'sample_labels.csv'))
+    labels = pd.read_csv(os.path.join(args.data_dir, 'sample_labels.csv'))
 
 
     print('PREPROCESSING IMAGES\n')
@@ -120,20 +120,20 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser = argparse.ArgumentParser(description='x_ray dataset hyperparameters.')
 
     parser.add_argument('--height', type=int, default=256,
                     help='Height of preprocessed output image. Default is 256.')
     parser.add_argument('--width', type=int, default=256,
                 help='Width of preprocessed output image. Default is 256.')
     parser.add_argument('--test_size', type=float, default=0.2,
-                help='Size of test split in percent. Default is 0.2.')
+                help='Size of test split. Default is 0.2.')
     args = parser.parse_args()
 
 
     # set dataset directories
-    args.data_dir = os.path.join(os.getcwd(), 'dataset')
-    args.image_dir = os.path.join(args.data_dir, 'x_ray_images')
+    args.data_dir = os.path.join(os.getcwd(), 'dataset/x_ray_images')
+    args.image_dir = os.path.join(args.data_dir, 'images')
 
     args.diagnosis_labels_mapping = {'Consolidation': 1,
                                      'Infiltration': 2,

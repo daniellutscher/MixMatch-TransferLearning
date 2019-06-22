@@ -207,12 +207,10 @@ def validate(valloader, model, criterion, epoch, mode, device = 'cuda'):
     return (losses.avg, top1.avg)
 
 
-
 def train_no_ssl(model, optimizer, criterion, train_loader, args):
 
     # initialize all stats
-    args.val_iteration = len(train_loader) * args.batch_size
-    bar = Bar('Training', max = args.val_iteration)
+    bar = Bar('Training', max=args.val_iteration)
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -221,30 +219,48 @@ def train_no_ssl(model, optimizer, criterion, train_loader, args):
     model.train()
     model.to(args.device)
 
-    for idx, batch in enumerate(train_loader):
+    # initialize data loader
+    labeled_train_iter = iter(labeled_trainloader)
+
+    for batch_idx in range(args.val_iteration):
+        try:
+            inputs_x, targets_x = labeled_train_iter.next()
+        except:
+            labeled_train_iter = iter(labeled_trainloader)
+            inputs_x, targets_x = labeled_train_iter.next()
+
         # send data to GPU
-        inputs, targets = batch[0].to(args.device), batch[1].to(args.device)
+        inputs_x, targets_x = inputs_x.to(args.device), \
+                              targets_x.cuda(non_blocking=True)
+
+        # zero the parameter gradients
+
 
         # forward
         outputs = model(inputs)
 
         # backward
-        loss = criterion(outputs, targets)
+        preds = outputs.data.max(1)[1]
+        loss = criterion(outputs, labels)
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
+
         # record loss
-        losses.update(loss.item(), inputs.size(0))
+        losses.update(loss.item(), inputs_x.size(0))
+        ws.update(w, inputs_x.size(0))
 
         # measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
 
         # plot progress
-        progress_batch = '({batch}/{size}) '.format(batch=idx + 1,
-                                                    size=args.val_iteration)
+        progress_batch = '({batch}/{size}) Data: {data:.3f}s '.format(
+                                                    batch=batch_idx + 1,
+                                                    size=args.val_iteration,
+                                                    data=data_time.avg)
         progress_total = '| Batch: {bt:.3f}s | Total: {total:} '.format(
                                                     bt=batch_time.avg,
                                                     total=bar.elapsed_td)
@@ -259,3 +275,5 @@ def train_no_ssl(model, optimizer, criterion, train_loader, args):
     bar.finish()
 
     return losses.avg
+
+

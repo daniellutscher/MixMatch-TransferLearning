@@ -3,6 +3,7 @@ from __future__ import print_function
 import errno
 import os
 import shutil
+import contextlib
 import random
 import numpy as np
 import torch
@@ -116,9 +117,8 @@ def get_models(args):
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
     logger = Logger(os.path.join(args.out, 'log.txt'))
-    logger.set_names(['Train Loss', 'Train Loss X', \
-                      'Train Loss U',  'Valid Loss', \
-                      'Valid Acc.', 'Test Loss', 'Test Acc.'])
+    logger.set_names(['Train Loss', 'Valid Loss', \
+                      'Valid Acc.', 'Train Acc.'])
 
     start_epoch, best_acc = 0, 0
 
@@ -141,31 +141,38 @@ def get_models(args):
         logger, start_epoch, best_acc = load_checkpoint(args, model,
                                                         ema_model, optimizer)
         if args.transfer_learning and start_epoch > args.unfreeze:
-            model = unfreeze_all_layers(model, ema_model)
+            print('Unfreezing layers of model and ema_model.')
+            model = unfreeze_layer(model)
+            ema_model = unfreeze_layer(ema_model)
 
     return model, ema_model, optimizer, ema_optimizer, \
            logger, start_epoch, best_acc
 
 
-def load_checkpoint(args, model, ema_model, optimizer):
+def load_checkpoint(args, model, optimizer, ema_model=None):
 
-    checkpoint_file = os.path.join(args.resume, 'checkpoint.pth.tar')
+    checkpoint_file = os.path.join(args.out, 'checkpoint.pth.tar')
 
     assert os.path.isfile(checkpoint_file), \
         'no checkpoint found in output folder.'
 
     checkpoint = torch.load(checkpoint_file)
 
-    model.load_state_dict(checkpoint['state_dict'])
-    ema_model.load_state_dict(checkpoint['ema_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer'])
-
-    logger = Logger(os.path.join(args.resume, 'log.txt'), resume=True)
+    logger = Logger(os.path.join(args.out, 'log.txt'), resume=True)
 
     best_acc = checkpoint['best_acc']
     start_epoch = checkpoint['epoch']
 
-    return model, ema_model, optimizer, logger, start_epoch, best_acc
+    # load all models and return everything
+    # if baseline (no MixMatch) script is run, this will break after the
+    # optimizer got loaded (as ema_model is not defined)
+    # and just return the rest
+    with ignored(NameError):
+        model.load_state_dict(checkpoint['state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        ema_model.load_state_dict(checkpoint['ema_state_dict'])
+        return model, ema_model, optimizer, logger, start_epoch, best_acc
+    return model, optimizer, logger, start_epoch, best_acc
 
 
 def create_model(args, model, efficient_version = 'b0', ema = False):
@@ -244,6 +251,14 @@ def init_params(net):
                 init.constant(m.bias, 0)
 
 
+@contextlib.contextmanager
+def ignored(*exceptions):
+    try:
+        yield
+    except exceptions:
+        pass
+
+
 def make_dir(path):
     '''make dir if not exist'''
     try:
@@ -268,17 +283,11 @@ def save_checkpoint(state, is_best, checkpoint, filename='checkpoint.pth.tar'):
         shutil.copyfile(filepath, os.path.join(checkpoint, 'model_best.pth.tar'))
 
 
-def unfreeze_all_layers(model, ema_model):
-    print('Unfreezing layers of model and ema_model.')
+def unfreeze_layer(model):
 
     for child in model.model_ft.children():
 
-      for param in child.parameters():
-        param.requires_grad = True
-
-    for child in ema_model.model_ft.children():
-
-          for param in child.parameters():
+        for param in child.parameters():
             param.requires_grad = True
 
     return model
