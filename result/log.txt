@@ -1,1 +1,0 @@
-Train Loss	Train Loss X	Train Loss U	Valid Loss	Valid Acc.	Test Loss	Test Acc.	
