@@ -18,8 +18,10 @@ class X_Ray_Images(Dataset):
         balanced_string = '' if balanced else '_unbalanced'
 
         self.transform = transform
-        self.X = np.load(os.path.join(base_dir, f'xray_x_{set_type}{balanced_string}.npy'))
-        self.y = np.load(os.path.join(base_dir, f'xray_y_{set_type}{balanced_string}.npy'))
+        self.X = np.load(os.path.join(base_dir,
+                    f'x_ray_images/xray_x_{set_type}{balanced_string}.npy'))
+        self.y = np.load(os.path.join(base_dir,
+                    f'x_ray_images/xray_y_{set_type}{balanced_string}.npy'))
 
         self.y = torch.from_numpy(self.y).long()
         assert self.y.shape[0] == self.X.shape[0], \

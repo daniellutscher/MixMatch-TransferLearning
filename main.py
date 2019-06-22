@@ -157,6 +157,7 @@ if __name__ == '__main__':
 
     args.device = 'cuda' if torch.cuda.is_available() else 'cpu'
     args.data_dir = os.path.join(os.path.abspath(os.getcwd()), 'dataset')
+    args.out = os.path.join(os.path.abspath(os.getcwd()), f'results/{args.out}')
 
     # enables the inbuilt cudnn auto-tuner to find best algorithm
     # to use for your hardware.
