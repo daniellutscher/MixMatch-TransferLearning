@@ -18,6 +18,12 @@ Currently, the script only contains the [CIFAR-10](https://www.cs.toronto.edu/~k
 - efficientnet_pytorch
 
 ## Usage
+### Download EfficientNet Model
+The pip version currently contains a CUDA/CPU bug, so please use github to install the efficient model:
+```
+git clone https://github.com/lukemelas/EfficientNet-PyTorch && cd EfficientNet-PyTorch && pip install -e .
+```
+
 ### Preprocess X-ray dataset
 Download the X-ray dataset from the [kaggle website](https://www.kaggle.com/nih-chest-xrays/sample/downloads/sample.zip/4). 
 Next, create the dataset and x_ray_images folder:
